@@ -43,64 +43,66 @@ install_homebrew() {
   command -v brew >/dev/null 2>&1 || fail "Homebrew installation failed"
 }
 
-install_gh_macos() {
+install_macos_tools() {
   install_homebrew
-  if command -v gh >/dev/null 2>&1; then
-    return 0
-  fi
 
-  log "installing GitHub CLI"
-  brew install gh
+  if ! command -v gh >/dev/null 2>&1; then
+    log "installing GitHub CLI"
+    brew install gh
+  fi
   command -v gh >/dev/null 2>&1 || fail "GitHub CLI installation failed"
+
+  if ! command -v dotstate >/dev/null 2>&1; then
+    log "installing DotState"
+    brew tap serkanyersen/dotstate
+    brew install dotstate
+  fi
+  command -v dotstate >/dev/null 2>&1 || fail "DotState installation failed"
 }
 
-install_gh_linux() {
-  if command -v gh >/dev/null 2>&1; then
-    return 0
+install_linux_tools() {
+  if ! command -v gh >/dev/null 2>&1; then
+    fail "GitHub CLI is required. Install it first: https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
   fi
 
-  fail "GitHub CLI is required. Install it first: https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
+  if ! command -v dotstate >/dev/null 2>&1; then
+    log "installing DotState"
+    curl -fsSL https://dotstate.serkan.dev/install.sh | bash
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+  command -v dotstate >/dev/null 2>&1 || fail "DotState installation failed"
 }
 
-install_gh() {
+install_tools() {
   case "$(uname -s)" in
-    Darwin) install_gh_macos ;;
-    Linux) install_gh_linux ;;
+    Darwin) install_macos_tools ;;
+    Linux) install_linux_tools ;;
     *) fail "unsupported OS: $(uname -s)" ;;
   esac
 }
 
-authenticate_github() {
-  if gh auth status >/dev/null 2>&1; then
-    return 0
-  fi
+print_next_steps() {
+  cat <<EOF
 
-  log "authenticating GitHub CLI"
+Ready.
+
+Next steps:
   gh auth login
-}
+  gh repo clone $DOTFILES_REPO $DOTFILES_DIR
+  cd $DOTFILES_DIR
+  dotstate activate
 
-sync_dotfiles_repo() {
-  if [ -d "$DOTFILES_DIR/.git" ]; then
-    log "updating dotfiles repo in $DOTFILES_DIR"
-    git -C "$DOTFILES_DIR" pull --ff-only
-    return 0
-  fi
+If the repo already exists:
+  cd $DOTFILES_DIR
+  git pull --ff-only
+  dotstate activate
 
-  if [ -e "$DOTFILES_DIR" ]; then
-    fail "$DOTFILES_DIR exists but is not a git repository"
-  fi
-
-  log "cloning private dotfiles repo into $DOTFILES_DIR"
-  gh repo clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+EOF
 }
 
 main() {
-  install_gh
-  authenticate_github
-  sync_dotfiles_repo
-
-  chmod +x "$DOTFILES_DIR/bootstrap"
-  exec "$DOTFILES_DIR/bootstrap"
+  install_tools
+  print_next_steps
 }
 
 main "$@"
