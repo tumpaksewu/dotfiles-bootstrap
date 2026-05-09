@@ -5,7 +5,7 @@ PAYLOAD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PI_AGENT_DIR="$HOME/.pi/agent"
 PPI_CONFIG_DIR="$HOME/.config/ppi"
 LOCAL_BIN_DIR="$HOME/.local/bin"
-PI_PACKAGE="${PI_PACKAGE:-@mariozechner/pi-coding-agent}"
+PI_PACKAGE="${PI_PACKAGE:-@earendil-works/pi-coding-agent}"
 NODE_VERSION="${NODE_VERSION:-lts}"
 
 log() {
